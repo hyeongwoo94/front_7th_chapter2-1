@@ -1,5 +1,4 @@
-import { Footer } from "./components/Footer.js";
-import { Header } from "./components/Header.js";
+import { Home } from "./pages/home.js";
 
 const enableMocking = () => {
   if (!import.meta.env.DEV) {
@@ -14,10 +13,8 @@ const enableMocking = () => {
 };
 
 function main() {
-  document.body.innerHTML = `
-  ${Header()}
-  ${Footer()}
-  `;
+  const root = document.getElementById("root");
+  root.innerHTML = Home();
 }
 
 if (import.meta.env.MODE === "test") {
