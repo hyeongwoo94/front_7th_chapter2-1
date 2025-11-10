@@ -56,7 +56,9 @@
   </div>
 `,u=(e,t)=>`
   <option value="${e}" ${t===e?`selected`:``}>${e}개</option>
-`,d=({loading:e=!1,limit:t=20}={})=>`
+`,d=(e,t,n)=>`
+  <option value="${e}" ${t===e?`selected`:``}>${n}</option>
+`,f=({loading:e=!1,limit:t=20,sort:n=`price_asc`}={})=>`
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
       <div class="mb-4">
         <div class="relative">
@@ -108,16 +110,13 @@
               class="text-sm border border-gray-300 rounded px-2 py-1
                 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="price_asc" selected>가격 낮은순</option>
-              <option value="price_desc">가격 높은순</option>
-              <option value="name_asc">이름순</option>
-              <option value="name_desc">이름 역순</option>
+              ${[[`price_asc`,`가격 낮은순`],[`price_desc`,`가격 높은순`],[`name_asc`,`이름순`],[`name_desc`,`이름 역순`]].map(([e,t])=>d(e,n,t)).join(``)}
             </select>
           </div>
         </div>
       </div>
     </div>
-  `,f=`
+  `,p=`
 	<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden animate-pulse">
 		<div class="aspect-square bg-gray-200"></div>
 		<div class="p-3">
@@ -127,7 +126,7 @@
 			<div class="h-8 bg-gray-200 rounded"></div>
 		</div>
 	</div>
-`,p=({title:e,image:t,productId:n,lprice:r})=>`
+`,m=({title:e,image:t,productId:n,lprice:r})=>`
 	<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden product-card"
 		data-product-id="${n}">
 		<div class="aspect-square bg-gray-100 overflow-hidden cursor-pointer product-image">
@@ -152,7 +151,7 @@
 			</button>
 		</div>
 	</div>
-	`,m=`
+	`,h=`
 	<div class="text-center py-4">
 		<div class="inline-flex items-center">
 			<svg class="animate-spin h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24">
@@ -163,7 +162,16 @@
 			<span class="text-sm text-gray-600">상품을 불러오는 중...</span>
 		</div>
 	</div>
-`,h=e=>`
+`,g=`
+  <div class="py-4 text-sm text-gray-600 flex items-center justify-center gap-2">
+    <svg class="animate-spin h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+    <span>상품을 불러오는 중입니다...</span>
+  </div>
+`,_=e=>`
   <section class="mb-6">
     <div class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
       ${e}
@@ -178,26 +186,38 @@
       </button>
     </div>
   </section>
-`,g=()=>`
+`,v=()=>`
   <div class="col-span-2 rounded-md border border-dashed border-gray-200 bg-white px-4 py-10 text-center text-sm text-gray-500">
     표시할 상품이 없습니다.
   </div>
-`,_=({loading:e=!0,products:t=[],error:n=null}={})=>{if(n)return h(n);if(e)return`
+`,y=({loading:e=!0,loadingMore:t=!1,products:n=[],error:r=null,hasMore:i=!1,loadMoreError:a=null}={})=>{if(r)return _(r);if(e)return`
       <section class="mb-6">
-        ${m}
+        ${h}
         <div class="grid grid-cols-2 gap-4 mb-6" id="products-grid">
-          ${f.repeat(4)}
+          ${p.repeat(4)}
         </div>
       </section>
-    `;let r=Array.isArray(t)&&t.length>0;return`
+    `;let o=Array.isArray(n)&&n.length>0;return`
     <section class="mb-6">
       <div class="mb-4 text-sm text-gray-600">
-        총 <span class="font-medium text-gray-900">${t.length}개</span>의 상품
+        총 <span class="font-medium text-gray-900">${n.length}개</span>의 상품
       </div>
       <div class="grid grid-cols-2 gap-4 mb-6" id="products-grid">
-        ${r?t.map(p).join(``):g()}
+        ${o?n.map(m).join(``):v()}
       </div>
+      ${a?`<div class="mb-4 flex flex-col items-center gap-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 text-center">
+              <span>${a}</span>
+              <button
+                id="products-load-more-retry-button"
+                class="inline-flex items-center gap-2 rounded-md border border-red-300 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-100 transition"
+                type="button"
+              >
+                다시 시도
+              </button>
+            </div>`:``}
+      ${t?g:``}
+      ${i?`<div id="products-load-more-trigger" class="h-2 w-full"></div>`:``}
     </section>
-  `},v=({searchProps:e={},productProps:t={}}={})=>`
-    ${s({top:d(e),main:_(t)})}
-  `,y={products:[],isLoadingProducts:!0,productsError:null,limit:20},b=async()=>{let{worker:e}=await r(async()=>{let{worker:e}=await import(`./browser-CcyfQrG1.js`);return{worker:e}},[]);return e.start({onUnhandledRequest:`bypass`,serviceWorker:{url:`/front_7th_chapter2-1/mockServiceWorker.js`}})};function x(){let e=document.getElementById(`root`);e.innerHTML=v({searchProps:{loading:y.isLoadingProducts,limit:y.limit},productProps:{loading:y.isLoadingProducts,products:y.products,error:y.productsError}});let t=e.querySelector(`#limit-select`);t&&(t.value=String(y.limit),t.addEventListener(`change`,C,{once:!0}));let n=e.querySelector(`#products-retry-button`);n&&n.addEventListener(`click`,()=>{S()},{once:!0})}async function S(){y.isLoadingProducts=!0,y.productsError=null,x();try{let e=await i({limit:y.limit});y.products=e?.products??[]}catch(e){console.error(`상품 목록을 불러오지 못했습니다.`,e),y.productsError=`상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.`}y.isLoadingProducts=!1,x()}function C(e){let t=Number(e.target.value);if(Number.isNaN(t)||y.limit===t){x();return}y.limit=t,S()}async function w(){x(),await S()}b().then(w);
+  `},b=({searchProps:e={},productProps:t={}}={})=>`
+    ${s({top:f(e),main:y(t)})}
+  `,x=`상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.`,S=`상품을 추가로 불러오지 못했습니다. 다시 시도해 주세요.`,C={products:[],isLoadingProducts:!0,isLoadingMore:!1,productsError:null,loadMoreError:null,limit:20,currentPage:0,hasMoreProducts:!0,sort:`price_asc`};let w=null;const T=async()=>{let{worker:e}=await r(async()=>{let{worker:e}=await import(`./browser-CcyfQrG1.js`);return{worker:e}},[]);return e.start({onUnhandledRequest:`bypass`,serviceWorker:{url:`/front_7th_chapter2-1/mockServiceWorker.js`}})};function E(){let e=document.getElementById(`root`);e.innerHTML=b({searchProps:{loading:C.isLoadingProducts,limit:C.limit,sort:C.sort},productProps:{loading:C.isLoadingProducts,loadingMore:C.isLoadingMore,products:C.products,error:C.productsError,hasMore:C.hasMoreProducts,loadMoreError:C.loadMoreError}});let t=e.querySelector(`#limit-select`);t&&(t.value=String(C.limit),t.addEventListener(`change`,k,{once:!0}));let n=e.querySelector(`#sort-select`);n&&(n.value=C.sort,n.addEventListener(`change`,A,{once:!0}));let r=e.querySelector(`#products-retry-button`);r&&r.addEventListener(`click`,()=>{O()},{once:!0});let i=e.querySelector(`#products-load-more-retry-button`);i&&i.addEventListener(`click`,()=>{O({append:!0})},{once:!0}),D(e)}function D(e){if(w&&(w.disconnect(),w=null),C.loadMoreError)return;let t=e.querySelector(`#products-load-more-trigger`);t&&(w=new IntersectionObserver(e=>{e.forEach(e=>{e.isIntersecting&&O({append:!0})})},{root:null,rootMargin:`0px 0px 200px 0px`,threshold:0}),w.observe(t))}async function O({append:e=!1}={}){let t=e?M():j();if(!t)return;let{nextPage:n}=t;try{let t=await N(n);P(t,{append:e,requestedPage:n})}catch(t){console.error(`상품 목록을 불러오지 못했습니다.`,t),F(e)}finally{I(e)}}function k(e){let t=Number(e.target.value);if(Number.isNaN(t)||C.limit===t){E();return}C.limit=t,O()}function A(e){let t=e.target.value;if(!t||C.sort===t){E();return}C.sort=t,O()}function j(){return C.isLoadingProducts=!0,C.productsError=null,C.loadMoreError=null,C.currentPage=0,C.hasMoreProducts=!0,E(),{nextPage:1}}function M(){return C.isLoadingProducts||C.isLoadingMore||!C.hasMoreProducts?null:(C.isLoadingMore=!0,C.loadMoreError=null,E(),{nextPage:C.currentPage+1})}async function N(e){return await i({limit:C.limit,page:e,sort:C.sort})}function P(e,{append:t,requestedPage:n}){var r,i;let a=e?.products??[],o=(e==null||(r=e.pagination)==null?void 0:r.page)??n,s=(e==null||(i=e.pagination)==null?void 0:i.hasNext)??a.length>=C.limit;C.products=t?[...C.products,...a]:a,C.currentPage=o,C.hasMoreProducts=s}function F(e){if(e){C.loadMoreError=S;return}C.productsError=x}function I(e){e?C.isLoadingMore=!1:C.isLoadingProducts=!1,E()}async function L(){E(),await O()}T().then(L);
