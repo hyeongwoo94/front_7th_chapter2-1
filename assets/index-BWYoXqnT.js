@@ -34,26 +34,30 @@
         ${o()}
     </div>
   `,c=`
-    <div class="flex flex-wrap gap-2">
-        <div class="text-sm text-gray-500 italic">카테고리 로딩 중...</div>
-    </div>
-`,l=`
-    <!-- 1depth 카테고리 -->
-    <div class="flex flex-wrap gap-2">
-        <button data-category1="생활/건강" class="category1-filter-btn text-left px-3 py-2 text-sm rounded-md border transition-colors
-            bg-white border-gray-300 text-gray-700 hover:bg-gray-50">
-        생활/건강
-        </button>
-        <button data-category1="디지털/가전" class="category1-filter-btn text-left px-3 py-2 text-sm rounded-md border transition-colors
-            bg-white border-gray-300 text-gray-700 hover:bg-gray-50">
-        디지털/가전
-        </button>
-    </div>
-    <!-- 2depth 카테고리 -->
-`,u=({loading:e})=>`
-    <!-- 검색 및 필터 -->
+  <div class="flex flex-wrap gap-2">
+    <div class="text-sm text-gray-500 italic">카테고리 로딩 중...</div>
+  </div>
+`,l=()=>`
+  <div class="flex flex-wrap gap-2">
+    <button
+      data-category1="생활/건강"
+      class="category1-filter-btn text-left px-3 py-2 text-sm rounded-md border transition-colors
+        bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+    >
+      생활/건강
+    </button>
+    <button
+      data-category1="디지털/가전"
+      class="category1-filter-btn text-left px-3 py-2 text-sm rounded-md border transition-colors
+        bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+    >
+      디지털/가전
+    </button>
+  </div>
+`,u=(e,t)=>`
+  <option value="${e}" ${t===e?`selected`:``}>${e}개</option>
+`,d=({loading:e=!1,limit:t=20}={})=>`
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
-      <!-- 검색창 -->
       <div class="mb-4">
         <div class="relative">
           <input
@@ -62,7 +66,7 @@
             placeholder="상품명을 검색해보세요..."
             value=""
             class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg
-							focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,41 +80,35 @@
           </div>
         </div>
       </div>
-      <!-- 필터 옵션 -->
+
       <div class="space-y-3">
-        <!-- 카테고리 필터 -->
         <div class="space-y-2">
           <div class="flex items-center gap-2">
             <label class="text-sm text-gray-600">카테고리:</label>
             <button data-breadcrumb="reset" class="text-xs hover:text-blue-800 hover:underline">전체</button>
           </div>
-          ${e?` ${c}`:` ${l}`}
-
+          ${e?c:l()}
         </div>
-        <!-- 기존 필터들 -->
+
         <div class="flex gap-2 items-center justify-between">
-          <!-- 페이지당 상품 수 -->
           <div class="flex items-center gap-2">
-            <label class="text-sm text-gray-600">개수:</label>
+            <label class="text-sm text-gray-600" for="limit-select">개수:</label>
             <select
               id="limit-select"
               class="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="10">10개</option>
-              <option value="20" selected="">20개</option>
-              <option value="50">50개</option>
-              <option value="100">100개</option>
+              ${[10,20,50,100].map(e=>u(e,t)).join(``)}
             </select>
           </div>
-          <!-- 정렬 -->
+
           <div class="flex items-center gap-2">
-            <label class="text-sm text-gray-600">정렬:</label>
+            <label class="text-sm text-gray-600" for="sort-select">정렬:</label>
             <select
               id="sort-select"
               class="text-sm border border-gray-300 rounded px-2 py-1
-							   focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="price_asc" selected="">가격 낮은순</option>
+              <option value="price_asc" selected>가격 낮은순</option>
               <option value="price_desc">가격 높은순</option>
               <option value="name_asc">이름순</option>
               <option value="name_desc">이름 역순</option>
@@ -119,7 +117,7 @@
         </div>
       </div>
     </div>
-  `,d=`
+  `,f=`
 	<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden animate-pulse">
 		<div class="aspect-square bg-gray-200"></div>
 		<div class="p-3">
@@ -129,35 +127,32 @@
 			<div class="h-8 bg-gray-200 rounded"></div>
 		</div>
 	</div>
-`,f=({title:e,image:t,productId:n,lprice:r})=>`
+`,p=({title:e,image:t,productId:n,lprice:r})=>`
 	<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden product-card"
-			data-product-id="${n}">
-		<!-- 상품 이미지 -->
+		data-product-id="${n}">
 		<div class="aspect-square bg-gray-100 overflow-hidden cursor-pointer product-image">
-		<img src="${t}"
+			<img src="${t}"
 				alt="${e}"
 				class="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
 				loading="lazy">
 		</div>
-		<!-- 상품 정보 -->
 		<div class="p-3">
-		<div class="cursor-pointer product-info mb-3">
-			<h3 class="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
-				${e}
-			</h3>
-			<p class="text-xs text-gray-500 mb-2"></p>
-			<p class="text-lg font-bold text-gray-900">
-				${Number(r).toLocaleString()}원
-			</p>
-		</div>
-		<!-- 장바구니 버튼 -->
-		<button class="w-full bg-blue-600 text-white text-sm py-2 px-3 rounded-md
+			<div class="cursor-pointer product-info mb-3">
+				<h3 class="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+					${e}
+				</h3>
+				<p class="text-xs text-gray-500 mb-2"></p>
+				<p class="text-lg font-bold text-gray-900">
+					${Number(r).toLocaleString()}원
+				</p>
+			</div>
+			<button class="w-full bg-blue-600 text-white text-sm py-2 px-3 rounded-md
 				hover:bg-blue-700 transition-colors add-to-cart-btn" data-product-id="${n}">
-			장바구니 담기
-		</button>
+				장바구니 담기
+			</button>
 		</div>
 	</div>
-	`,p=`
+	`,m=`
 	<div class="text-center py-4">
 		<div class="inline-flex items-center">
 			<svg class="animate-spin h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24">
@@ -168,28 +163,41 @@
 			<span class="text-sm text-gray-600">상품을 불러오는 중...</span>
 		</div>
 	</div>
-	`,m=({loading:e,products:t})=>`
-    <!-- 상품 목록 -->
-	<div class="mb-6">
-		<div>
-			${e?`
-		  ${p}		
-				<!-- 상품 그리드 -->
-				<div class="grid grid-cols-2 gap-4 mb-6" id="products-grid">
-					<!-- 로딩 스켈레톤 -->
-					${d.repeat(2)}
-				</div>
-				`:`
-		  	<!-- 상품 개수 정보 -->
-				<div class="mb-4 text-sm text-gray-600">
-					총 <span class="font-medium text-gray-900">${t.length}개</span>의 상품
-				</div>
-				<div class="grid grid-cols-2 gap-4 mb-6" id="products-grid">
-					${t.map(f).join(``)}
-				</div>
-			`}
-		</div>
+`,h=e=>`
+  <section class="mb-6">
+    <div class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      ${e}
     </div>
-  `,h=({filters:e,pagination:t,products:n,loading:r})=>`
-    ${s({top:u({filters:e,pagination:t}),main:m({products:n,loading:r})})}
-  `,g=async()=>{let{worker:e}=await r(async()=>{let{worker:e}=await import(`./browser-CcyfQrG1.js`);return{worker:e}},[]);return e.start({onUnhandledRequest:`bypass`,serviceWorker:{url:`/front_7th_chapter2-1/mockServiceWorker.js`}})};async function _(){let e=document.getElementById(`root`);e.innerHTML=h({loading:!0});let t=await i();setTimeout(()=>{console.log(t),e.innerHTML=h({...t,loading:!1})},1e3)}g().then(_);
+    <div class="text-center">
+      <button
+        id="products-retry-button"
+        class="inline-flex items-center gap-2 rounded-md border border-blue-500 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition"
+        type="button"
+      >
+        다시 시도
+      </button>
+    </div>
+  </section>
+`,g=()=>`
+  <div class="col-span-2 rounded-md border border-dashed border-gray-200 bg-white px-4 py-10 text-center text-sm text-gray-500">
+    표시할 상품이 없습니다.
+  </div>
+`,_=({loading:e=!0,products:t=[],error:n=null}={})=>{if(n)return h(n);if(e)return`
+      <section class="mb-6">
+        ${m}
+        <div class="grid grid-cols-2 gap-4 mb-6" id="products-grid">
+          ${f.repeat(4)}
+        </div>
+      </section>
+    `;let r=Array.isArray(t)&&t.length>0;return`
+    <section class="mb-6">
+      <div class="mb-4 text-sm text-gray-600">
+        총 <span class="font-medium text-gray-900">${t.length}개</span>의 상품
+      </div>
+      <div class="grid grid-cols-2 gap-4 mb-6" id="products-grid">
+        ${r?t.map(p).join(``):g()}
+      </div>
+    </section>
+  `},v=({searchProps:e={},productProps:t={}}={})=>`
+    ${s({top:d(e),main:_(t)})}
+  `,y={products:[],isLoadingProducts:!0,productsError:null,limit:20},b=async()=>{let{worker:e}=await r(async()=>{let{worker:e}=await import(`./browser-CcyfQrG1.js`);return{worker:e}},[]);return e.start({onUnhandledRequest:`bypass`,serviceWorker:{url:`/front_7th_chapter2-1/mockServiceWorker.js`}})};function x(){let e=document.getElementById(`root`);e.innerHTML=v({searchProps:{loading:y.isLoadingProducts,limit:y.limit},productProps:{loading:y.isLoadingProducts,products:y.products,error:y.productsError}});let t=e.querySelector(`#limit-select`);t&&(t.value=String(y.limit),t.addEventListener(`change`,C,{once:!0}));let n=e.querySelector(`#products-retry-button`);n&&n.addEventListener(`click`,()=>{S()},{once:!0})}async function S(){y.isLoadingProducts=!0,y.productsError=null,x();try{let e=await i({limit:y.limit});y.products=e?.products??[]}catch(e){console.error(`상품 목록을 불러오지 못했습니다.`,e),y.productsError=`상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.`}y.isLoadingProducts=!1,x()}function C(e){let t=Number(e.target.value);if(Number.isNaN(t)||y.limit===t){x();return}y.limit=t,S()}async function w(){x(),await S()}b().then(w);
