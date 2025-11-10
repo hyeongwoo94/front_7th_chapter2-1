@@ -1,4 +1,4 @@
-(function(){let e=document.createElement(`link`).relList;if(e&&e.supports&&e.supports(`modulepreload`))return;for(let e of document.querySelectorAll(`link[rel="modulepreload"]`))n(e);new MutationObserver(e=>{for(let t of e){if(t.type!==`childList`)continue;for(let e of t.addedNodes)e.tagName===`LINK`&&e.rel===`modulepreload`&&n(e)}}).observe(document,{childList:!0,subtree:!0});function t(e){let t={};return e.integrity&&(t.integrity=e.integrity),e.referrerPolicy&&(t.referrerPolicy=e.referrerPolicy),e.crossOrigin===`use-credentials`?t.credentials=`include`:e.crossOrigin===`anonymous`?t.credentials=`omit`:t.credentials=`same-origin`,t}function n(e){if(e.ep)return;e.ep=!0;let n=t(e);fetch(e.href,n)}})();async function e(e={}){let{limit:t=20,search:n=``,category1:r=``,category2:i=``,sort:a=`price_asc`}=e,o=e.current??e.page??1,s=new URLSearchParams({page:o.toString(),limit:t.toString(),...n&&{search:n},...r&&{category1:r},...i&&{category2:i},sort:a}),c=await fetch(`/api/products?${s}`);return await c.json()}const t=()=>`
+(function(){let e=document.createElement(`link`).relList;if(e&&e.supports&&e.supports(`modulepreload`))return;for(let e of document.querySelectorAll(`link[rel="modulepreload"]`))n(e);new MutationObserver(e=>{for(let t of e){if(t.type!==`childList`)continue;for(let e of t.addedNodes)e.tagName===`LINK`&&e.rel===`modulepreload`&&n(e)}}).observe(document,{childList:!0,subtree:!0});function t(e){let t={};return e.integrity&&(t.integrity=e.integrity),e.referrerPolicy&&(t.referrerPolicy=e.referrerPolicy),e.crossOrigin===`use-credentials`?t.credentials=`include`:e.crossOrigin===`anonymous`?t.credentials=`omit`:t.credentials=`same-origin`,t}function n(e){if(e.ep)return;e.ep=!0;let n=t(e);fetch(e.href,n)}})();const e=`modulepreload`,t=function(e){return`/front_7th_chapter2-1/`+e},n={},r=function(r,i,a){let o=Promise.resolve();if(i&&i.length>0){let r=function(e){return Promise.all(e.map(e=>Promise.resolve(e).then(e=>({status:`fulfilled`,value:e}),e=>({status:`rejected`,reason:e}))))},s=document.getElementsByTagName(`link`),c=document.querySelector(`meta[property=csp-nonce]`),l=c?.nonce||c?.getAttribute(`nonce`);o=r(i.map(r=>{if(r=t(r,a),r in n)return;n[r]=!0;let i=r.endsWith(`.css`),o=i?`[rel="stylesheet"]`:``,c=!!a;if(c)for(let e=s.length-1;e>=0;e--){let t=s[e];if(t.href===r&&(!i||t.rel===`stylesheet`))return}else if(document.querySelector(`link[href="${r}"]${o}`))return;let u=document.createElement(`link`);if(u.rel=i?`stylesheet`:e,i||(u.as=`script`),u.crossOrigin=``,u.href=r,l&&u.setAttribute(`nonce`,l),document.head.appendChild(u),i)return new Promise((e,t)=>{u.addEventListener(`load`,e),u.addEventListener(`error`,()=>t(Error(`Unable to preload CSS for ${r}`)))})}))}function s(e){let t=new Event(`vite:preloadError`,{cancelable:!0});if(t.payload=e,window.dispatchEvent(t),!t.defaultPrevented)throw e}return o.then(e=>{for(let t of e||[]){if(t.status!==`rejected`)continue;s(t.reason)}return r().catch(s)})};async function i(e={}){let{limit:t=20,search:n=``,category1:r=``,category2:i=``,sort:a=`price_asc`}=e,o=e.current??e.page??1,s=new URLSearchParams({page:o.toString(),limit:t.toString(),...n&&{search:n},...r&&{category1:r},...i&&{category2:i},sort:a}),c=await fetch(`/api/products?${s}`);return await c.json()}const a=()=>`
 		<header class="bg-white shadow-sm sticky top-0 z-40">
 		  <div class="max-w-md mx-auto px-4 py-4">
 			<div class="flex items-center justify-between">
@@ -17,27 +17,27 @@
 			</div>
 		  </div>
 		</header>
-	`,n=()=>`
+	`,o=()=>`
 		<footer class="bg-white shadow-sm sticky top-0 z-40">
 		  <div class="max-w-md mx-auto py-8 text-center text-gray-500">
 			<p>© ${new Date().getFullYear()} 항해플러스 프론트엔드 쇼핑몰</p>
 		  </div>
 		</footer>
-	`,r=({top:e=``,main:r=``,bottom:i=``})=>`
+	`,s=({top:e=``,main:t=``,bottom:n=``})=>`
     <div class="min-h-screen bg-gray-50">
-        ${t()}
+        ${a()}
         <main class="max-w-md mx-auto px-4 py-4">
             ${e}
-            ${r}
-            ${i}
+            ${t}
+            ${n}
         </main>
-        ${n()}
+        ${o()}
     </div>
-  `,i=`
+  `,c=`
     <div class="flex flex-wrap gap-2">
         <div class="text-sm text-gray-500 italic">카테고리 로딩 중...</div>
     </div>
-`,a=`
+`,l=`
     <!-- 1depth 카테고리 -->
     <div class="flex flex-wrap gap-2">
         <button data-category1="생활/건강" class="category1-filter-btn text-left px-3 py-2 text-sm rounded-md border transition-colors
@@ -50,7 +50,7 @@
         </button>
     </div>
     <!-- 2depth 카테고리 -->
-`,o=({loading:e})=>`
+`,u=({loading:e})=>`
     <!-- 검색 및 필터 -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
       <!-- 검색창 -->
@@ -84,7 +84,7 @@
             <label class="text-sm text-gray-600">카테고리:</label>
             <button data-breadcrumb="reset" class="text-xs hover:text-blue-800 hover:underline">전체</button>
           </div>
-          ${e?` ${i}`:` ${a}`}
+          ${e?` ${c}`:` ${l}`}
 
         </div>
         <!-- 기존 필터들 -->
@@ -119,7 +119,7 @@
         </div>
       </div>
     </div>
-  `,s=`
+  `,d=`
 	<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden animate-pulse">
 		<div class="aspect-square bg-gray-200"></div>
 		<div class="p-3">
@@ -129,7 +129,7 @@
 			<div class="h-8 bg-gray-200 rounded"></div>
 		</div>
 	</div>
-`,c=({title:e,image:t,productId:n,lprice:r})=>`
+`,f=({title:e,image:t,productId:n,lprice:r})=>`
 	<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden product-card"
 			data-product-id="${n}">
 		<!-- 상품 이미지 -->
@@ -157,7 +157,7 @@
 		</button>
 		</div>
 	</div>
-	`,l=`
+	`,p=`
 	<div class="text-center py-4">
 		<div class="inline-flex items-center">
 			<svg class="animate-spin h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24">
@@ -168,16 +168,16 @@
 			<span class="text-sm text-gray-600">상품을 불러오는 중...</span>
 		</div>
 	</div>
-	`,u=({loading:e,products:t})=>`
+	`,m=({loading:e,products:t})=>`
     <!-- 상품 목록 -->
 	<div class="mb-6">
 		<div>
 			${e?`
-		  ${l}		
+		  ${p}		
 				<!-- 상품 그리드 -->
 				<div class="grid grid-cols-2 gap-4 mb-6" id="products-grid">
 					<!-- 로딩 스켈레톤 -->
-					${s.repeat(2)}
+					${d.repeat(2)}
 				</div>
 				`:`
 		  	<!-- 상품 개수 정보 -->
@@ -185,11 +185,11 @@
 					총 <span class="font-medium text-gray-900">${t.length}개</span>의 상품
 				</div>
 				<div class="grid grid-cols-2 gap-4 mb-6" id="products-grid">
-					${t.map(c).join(``)}
+					${t.map(f).join(``)}
 				</div>
 			`}
 		</div>
     </div>
-  `,d=({filters:e,pagination:t,products:n,loading:i})=>`
-    ${r({top:o({filters:e,pagination:t}),main:u({products:n,loading:i})})}
-  `,f=()=>Promise.resolve();async function p(){let t=document.getElementById(`root`);t.innerHTML=d({loading:!0});let n=await e();setTimeout(()=>{console.log(n),t.innerHTML=d({...n,loading:!1})},1e3)}f().then(p);
+  `,h=({filters:e,pagination:t,products:n,loading:r})=>`
+    ${s({top:u({filters:e,pagination:t}),main:m({products:n,loading:r})})}
+  `,g=async()=>{let{worker:e}=await r(async()=>{let{worker:e}=await import(`./browser-CcyfQrG1.js`);return{worker:e}},[]);return e.start({onUnhandledRequest:`bypass`,serviceWorker:{url:`/front_7th_chapter2-1/mockServiceWorker.js`}})};async function _(){let e=document.getElementById(`root`);e.innerHTML=h({loading:!0});let t=await i();setTimeout(()=>{console.log(t),e.innerHTML=h({...t,loading:!1})},1e3)}g().then(_);
