@@ -1,23 +1,24 @@
-const renderLoading = ({ isLoading = false }) => {
-  if (isLoading) {
-    return /*html*/ `<div class="text-sm text-gray-500 italic">카테고리 로딩 중...</div>`;
-  }
-
-  return /*html*/ `
+const SearchLoading = `
+    <div class="flex flex-wrap gap-2">
+        <div class="text-sm text-gray-500 italic">카테고리 로딩 중...</div>
+    </div>
+`;
+const SearchContent = `
+    <!-- 1depth 카테고리 -->
     <div class="flex flex-wrap gap-2">
         <button data-category1="생활/건강" class="category1-filter-btn text-left px-3 py-2 text-sm rounded-md border transition-colors
             bg-white border-gray-300 text-gray-700 hover:bg-gray-50">
-            생활/건강
+        생활/건강
         </button>
         <button data-category1="디지털/가전" class="category1-filter-btn text-left px-3 py-2 text-sm rounded-md border transition-colors
             bg-white border-gray-300 text-gray-700 hover:bg-gray-50">
-            디지털/가전
+        디지털/가전
         </button>
     </div>
-  `;
-};
+    <!-- 2depth 카테고리 -->
+`;
 //true는 로딩중인거. false가 로딩완료인것.
-export const Search = ({ isLoading = false } = {}) => {
+export const Search = ({ loading }) => {
   return /*html*/ `
     <!-- 검색 및 필터 -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
@@ -52,11 +53,8 @@ export const Search = ({ isLoading = false } = {}) => {
             <label class="text-sm text-gray-600">카테고리:</label>
             <button data-breadcrumb="reset" class="text-xs hover:text-blue-800 hover:underline">전체</button>
           </div>
-          <!-- 1depth 카테고리 -->
-          <div class="flex flex-wrap gap-2">
-            ${renderLoading({ isLoading })}
-          </div>
-          <!-- 2depth 카테고리 -->
+          ${loading ? ` ${SearchLoading}` : ` ${SearchContent}`}
+
         </div>
         <!-- 기존 필터들 -->
         <div class="flex gap-2 items-center justify-between">
