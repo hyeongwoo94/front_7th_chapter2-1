@@ -7,22 +7,13 @@ const SearchLoading = `
   </div>
 `;
 
-const renderRootCategories = (categories = {}, selectedCategory1 = null) => {
+const renderRootButtons = (categories = {}, selectedCategory1 = null) => {
   const categoryKeys = Object.keys(categories);
-
   if (categoryKeys.length === 0) {
-    return `
-      <div class="space-y-2">
-        <div class="flex items-center gap-2">
-          <label class="text-sm text-gray-600">카테고리:</label>
-          <button data-breadcrumb="reset" class="text-xs hover:text-blue-800 hover:underline">전체</button>
-        </div>
-        <div class="text-sm text-gray-400">표시할 카테고리가 없습니다.</div>
-      </div>
-    `;
+    return `<span class="text-sm text-gray-400">표시할 카테고리가 없습니다.</span>`;
   }
 
-  const buttons = categoryKeys
+  return categoryKeys
     .sort((a, b) => a.localeCompare(b, "ko"))
     .map((category1) => {
       const isActive = category1 === selectedCategory1;
@@ -37,27 +28,38 @@ const renderRootCategories = (categories = {}, selectedCategory1 = null) => {
       `;
     })
     .join("");
-
-  return `
-    <div class="space-y-2">
-      <div class="flex items-center gap-2">
-        <label class="text-sm text-gray-600">카테고리:</label>
-        <button data-breadcrumb="reset" class="text-xs hover:text-blue-800 hover:underline">전체</button>
-      </div>
-      <div class="flex flex-wrap gap-2">
-        ${buttons}
-      </div>
-    </div>
-  `;
 };
 
-const renderCategorySection = ({ loading, categories, selectedCategory1, selectedCategory2 }) => {
+const renderBreadcrumb = ({ selectedCategory1, selectedCategory2 }) => {
+  const crumbs = [
+    `<span class="text-sm text-gray-600">카테고리:</span>`,
+    `<button data-breadcrumb="reset" class="text-xs hover:text-blue-800 hover:underline">전체</button>`,
+  ];
+
+  if (selectedCategory1) {
+    crumbs.push(
+      `<span class="text-xs text-gray-500">&gt;</span>`,
+      `<button data-breadcrumb="category1" data-category1="${selectedCategory1}" class="text-xs hover:text-blue-800 hover:underline">${selectedCategory1}</button>`,
+    );
+  }
+
+  if (selectedCategory2) {
+    crumbs.push(
+      `<span class="text-xs text-gray-500">&gt;</span>`,
+      `<span class="text-xs text-gray-600 cursor-default">${selectedCategory2}</span>`,
+    );
+  }
+
+  return crumbs.join(" ");
+};
+
+const renderCategoryButtons = ({ categories, selectedCategory1, selectedCategory2, loading }) => {
   if (loading) {
     return SearchLoading;
   }
 
   if (!selectedCategory1) {
-    return renderRootCategories(categories, selectedCategory1);
+    return renderRootButtons(categories, selectedCategory1);
   }
 
   const category2Source = categories?.[selectedCategory1];
@@ -121,7 +123,21 @@ export const Search = ({
       </div>
 
       <div class="space-y-3">
-        ${renderCategorySection({ loading, categories, selectedCategory1, selectedCategory2 })}
+        <div class="space-y-2">
+          <div class="flex items-center gap-2" id="category-breadcrumb">
+            ${renderBreadcrumb({ selectedCategory1, selectedCategory2 })}
+          </div>
+          <div class="space-y-2">
+            <div class="flex flex-wrap gap-2" id="category-buttons">
+              ${renderCategoryButtons({
+                categories,
+                selectedCategory1,
+                selectedCategory2,
+                loading,
+              })}
+            </div>
+          </div>
+        </div>
 
         <div class="flex gap-2 items-center justify-between">
           <div class="flex items-center gap-2">
@@ -156,3 +172,9 @@ export const Search = ({
     </div>
   `;
 };
+
+export const updateCategoryBreadcrumb = ({ selectedCategory1, selectedCategory2 }) =>
+  renderBreadcrumb({ selectedCategory1, selectedCategory2 });
+
+export const updateCategoryButtons = ({ categories, selectedCategory1, selectedCategory2, loading }) =>
+  renderCategoryButtons({ categories, selectedCategory1, selectedCategory2, loading });

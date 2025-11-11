@@ -1,6 +1,7 @@
 import { getProducts, getProduct, getCategories } from "./api/productApi.js";
 import { Home } from "./pages/home.js";
 import { Detail } from "./pages/detail.js";
+import { Search, updateCategoryBreadcrumb, updateCategoryButtons, ItemList } from "./components/index.js";
 
 const INITIAL_LOAD_ERROR_MESSAGE = "상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
 const LOAD_MORE_ERROR_MESSAGE = "상품을 추가로 불러오지 못했습니다. 다시 시도해 주세요.";
@@ -35,6 +36,8 @@ const state = {
 };
 
 let loadMoreObserver = null;
+let homeShellMounted = false;
+let searchSectionInitialized = false;
 
 const enableMocking = async () => {
   const { worker } = await import("./mocks/browser.js");
@@ -54,99 +57,189 @@ function render() {
   if (!root) return;
 
   if (state.route?.name === "detail") {
-    disconnectLoadMoreObserver();
-    root.innerHTML = Detail({
-      navProps: {
-        product: state.detail.product,
-        loading: state.detail.isLoading,
-      },
-      contentProps: {
-        product: state.detail.product,
-        loading: state.detail.isLoading,
-        error: state.detail.error,
-      },
-    });
-    attachDetailEvents(root);
+    renderDetailView(root);
     return;
   }
 
-  root.innerHTML = Home({
-    searchProps: {
-      loading: state.isLoadingProducts || state.isLoadingCategories,
-      limit: state.limit,
-      sort: state.sort,
-      selectedCategory1: state.selectedCategory1,
-      selectedCategory2: state.selectedCategory2,
-      categories: state.categories,
+  renderHomeView(root);
+}
+
+function renderDetailView(root) {
+  disconnectLoadMoreObserver();
+  root.innerHTML = Detail({
+    navProps: {
+      product: state.detail.product,
+      loading: state.detail.isLoading,
     },
-    productProps: {
-      loading: state.isLoadingProducts,
-      loadingMore: state.isLoadingMore,
-      products: state.products,
-      error: state.productsError,
-      hasMore: state.hasMoreProducts,
-      loadMoreError: state.loadMoreError,
-      totalCount: state.totalProducts,
+    contentProps: {
+      product: state.detail.product,
+      loading: state.detail.isLoading,
+      error: state.detail.error,
     },
   });
+  attachDetailEvents(root);
+}
 
-  attachHomeEvents(root);
+function renderHomeView(root) {
+  if (!homeShellMounted) {
+    root.innerHTML = Home();
+    homeShellMounted = true;
+    searchSectionInitialized = false;
+    attachHeaderNavigation(root);
+  }
+
+  const searchContainer = document.getElementById("search-section");
+  const productContainer = document.getElementById("product-section");
+
+  if (!searchContainer || !productContainer) {
+    root.innerHTML = Home();
+    homeShellMounted = true;
+    searchSectionInitialized = false;
+    attachHeaderNavigation(root);
+  }
+
+  if (!searchSectionInitialized && state.categoriesLoaded) {
+    initializeSearchSection();
+  }
+
+  updateSearchUI();
+  renderProductSection();
   setupLoadMoreObserver(root);
 }
 
-function attachHomeEvents(root) {
-  attachHeaderNavigation(root);
+function initializeSearchSection() {
+  const searchContainer = document.getElementById("search-section");
+  if (!searchContainer) return;
 
-  const limitSelect = root.querySelector("#limit-select");
+  searchContainer.innerHTML = Search({
+    loading: state.isLoadingCategories,
+    limit: state.limit,
+    sort: state.sort,
+    selectedCategory1: state.selectedCategory1,
+    selectedCategory2: state.selectedCategory2,
+    categories: state.categories,
+  });
+
+  searchSectionInitialized = true;
+
+  const limitSelect = document.getElementById("limit-select");
+  if (limitSelect) {
+    limitSelect.addEventListener("change", selectLimit);
+  }
+
+  const sortSelect = document.getElementById("sort-select");
+  if (sortSelect) {
+    sortSelect.addEventListener("change", selectSort);
+  }
+
+  const categoryBreadcrumb = document.getElementById("category-breadcrumb");
+  if (categoryBreadcrumb) {
+    categoryBreadcrumb.addEventListener("click", handleCategoryBreadcrumbClick);
+  }
+
+  const categoryButtons = document.getElementById("category-buttons");
+  if (categoryButtons) {
+    categoryButtons.addEventListener("click", handleCategoryButtonsClick);
+  }
+}
+
+function updateSearchUI() {
+  if (!searchSectionInitialized) {
+    return;
+  }
+
+  const categoryBreadcrumb = document.getElementById("category-breadcrumb");
+  if (categoryBreadcrumb) {
+    categoryBreadcrumb.innerHTML = updateCategoryBreadcrumb({
+      selectedCategory1: state.selectedCategory1,
+      selectedCategory2: state.selectedCategory2,
+    });
+  }
+
+  const categoryButtons = document.getElementById("category-buttons");
+  if (categoryButtons) {
+    categoryButtons.innerHTML = updateCategoryButtons({
+      categories: state.categories,
+      selectedCategory1: state.selectedCategory1,
+      selectedCategory2: state.selectedCategory2,
+      loading: state.isLoadingCategories,
+    });
+  }
+
+  const limitSelect = document.getElementById("limit-select");
   if (limitSelect) {
     limitSelect.value = String(state.limit);
-    limitSelect.addEventListener("change", selectLimit, { once: true });
   }
 
-  const sortSelect = root.querySelector("#sort-select");
+  const sortSelect = document.getElementById("sort-select");
   if (sortSelect) {
     sortSelect.value = state.sort;
-    sortSelect.addEventListener("change", selectSort, { once: true });
   }
+}
 
-  const retryButton = root.querySelector("#products-retry-button");
+function renderProductSection() {
+  const productContainer = document.getElementById("product-section");
+  if (!productContainer) return;
+
+  productContainer.innerHTML = ItemList({
+    loading: state.isLoadingProducts,
+    loadingMore: state.isLoadingMore,
+    products: state.products,
+    error: state.productsError,
+    hasMore: state.hasMoreProducts,
+    loadMoreError: state.loadMoreError,
+    totalCount: state.totalProducts,
+  });
+
+  const retryButton = productContainer.querySelector("#products-retry-button");
   if (retryButton) {
-    retryButton.addEventListener(
-      "click",
-      () => {
-        loadProducts();
-      },
-      { once: true },
-    );
+    retryButton.addEventListener("click", () => loadProducts(), { once: true });
   }
 
-  const loadMoreRetryButton = root.querySelector("#products-load-more-retry-button");
+  const loadMoreRetryButton = productContainer.querySelector("#products-load-more-retry-button");
   if (loadMoreRetryButton) {
-    loadMoreRetryButton.addEventListener(
-      "click",
-      () => {
-        loadProducts({ append: true });
-      },
-      { once: true },
-    );
+    loadMoreRetryButton.addEventListener("click", () => loadProducts({ append: true }), {
+      once: true,
+    });
   }
 
-  const productCards = root.querySelectorAll(".product-card");
+  const productCards = productContainer.querySelectorAll(".product-card");
   productCards.forEach((card) => {
     card.addEventListener("click", handleProductCardClick);
   });
+}
 
-  const categoryRootButtons = root.querySelectorAll(".category1-filter-btn");
-  categoryRootButtons.forEach((button) => button.addEventListener("click", handleCategory1Select));
+function handleCategoryBreadcrumbClick(event) {
+  const target = event.target.closest("button");
+  if (!target) {
+    return;
+  }
 
-  const categorySecondButtons = root.querySelectorAll(".category2-filter-btn");
-  categorySecondButtons.forEach((button) => button.addEventListener("click", handleCategory2Select));
+  if (target.dataset.breadcrumb === "reset") {
+    handleCategoryReset(event);
+    return;
+  }
 
-  const resetButtons = root.querySelectorAll('[data-breadcrumb="reset"]');
-  resetButtons.forEach((button) => button.addEventListener("click", handleCategoryReset));
+  if (target.dataset.breadcrumb === "category1") {
+    handleCategoryBreadcrumb(event);
+    return;
+  }
+}
 
-  const breadcrumbCategoryButtons = root.querySelectorAll('[data-breadcrumb="category1"]');
-  breadcrumbCategoryButtons.forEach((button) => button.addEventListener("click", handleCategoryBreadcrumb));
+function handleCategoryButtonsClick(event) {
+  const target = event.target.closest("button");
+  if (!target) {
+    return;
+  }
+
+  if (target.dataset.category2) {
+    handleCategory2Select(event);
+    return;
+  }
+
+  if (target.dataset.category1) {
+    handleCategory1Select(event);
+  }
 }
 
 function attachDetailEvents(root) {
@@ -159,6 +252,30 @@ function attachDetailEvents(root) {
       navigateToHome();
     });
   });
+
+  const detailBreadcrumb = root.querySelector(".detail-breadcrumb");
+  if (detailBreadcrumb) {
+    detailBreadcrumb.addEventListener("click", handleDetailBreadcrumbClick);
+  }
+}
+
+function handleDetailBreadcrumbClick(event) {
+  const button = event.target.closest("[data-navigate]");
+  if (!button) {
+    return;
+  }
+
+  if (button.dataset.navigate === "home") {
+    event.preventDefault();
+    navigateToHome();
+    return;
+  }
+
+  if (button.dataset.navigate === "home-category") {
+    event.preventDefault();
+    const { category1, category2 } = button.dataset;
+    navigateToHome({ category1: category1 || null, category2: category2 || null, current: 1 });
+  }
 }
 
 function attachHeaderNavigation(root) {
@@ -261,57 +378,107 @@ function navigateToDetail(productId) {
   handleRouteChange();
 }
 
-function navigateToHome({ replace = false } = {}) {
-  const homeUrl = buildUrl("");
+function navigateToHome({ replace = false, category1, category2, current } = {}) {
+  const url = buildHomeUrlWithParams({
+    current,
+    category1,
+    category2,
+  });
+
   if (replace) {
-    window.history.replaceState({}, "", homeUrl.toString());
+    window.history.replaceState({}, "", url.toString());
   } else {
-    window.history.pushState({}, "", homeUrl.toString());
+    window.history.pushState({}, "", url.toString());
   }
+
   handleRouteChange();
 }
 
 function handleCategory1Select(event) {
   event.preventDefault();
-  const { category1 } = event.currentTarget.dataset;
+  const button = event.target.closest("[data-category1]");
+  if (!button) {
+    return;
+  }
+  const { category1 } = button.dataset;
   if (!category1) {
     return;
   }
 
+  const changed = state.selectedCategory1 !== category1 || state.selectedCategory2 !== null;
   state.selectedCategory1 = category1;
   state.selectedCategory2 = null;
-  render();
+
+  if (changed) {
+    updateHomeUrlParams({ current: 1, category1, category2: null });
+    loadProducts();
+  } else {
+    updateSearchUI();
+  }
 }
 
 function handleCategory2Select(event) {
   event.preventDefault();
-  const { category1, category2 } = event.currentTarget.dataset;
+  const button = event.target.closest("[data-category2]");
+  if (!button) {
+    return;
+  }
+  const { category1, category2 } = button.dataset;
   if (!category1 || !category2) {
     return;
   }
 
+  const changed = state.selectedCategory1 !== category1 || state.selectedCategory2 !== category2;
   state.selectedCategory1 = category1;
   state.selectedCategory2 = category2;
-  render();
+
+  if (changed) {
+    updateHomeUrlParams({ current: 1, category1, category2 });
+    loadProducts();
+  } else {
+    updateSearchUI();
+  }
 }
 
 function handleCategoryReset(event) {
   event.preventDefault();
-  if (!state.selectedCategory1 && !state.selectedCategory2) {
+  const button = event.target.closest('[data-breadcrumb="reset"]');
+  if (!button) {
+    return;
+  }
+
+  const changed = state.selectedCategory1 !== null || state.selectedCategory2 !== null;
+  if (!changed) {
+    updateSearchUI();
     return;
   }
 
   state.selectedCategory1 = null;
   state.selectedCategory2 = null;
-  render();
+  updateHomeUrlParams({ current: 1, category1: null, category2: null });
+  loadProducts();
 }
 
 function handleCategoryBreadcrumb(event) {
   event.preventDefault();
-  const { category1 } = event.currentTarget.dataset;
-  state.selectedCategory1 = category1 || null;
+  const button = event.target.closest('[data-breadcrumb="category1"]');
+  if (!button) {
+    return;
+  }
+
+  const { category1 } = button.dataset;
+  const targetCategory = category1 || null;
+  const changed = state.selectedCategory1 !== targetCategory || state.selectedCategory2 !== null;
+
+  state.selectedCategory1 = targetCategory;
   state.selectedCategory2 = null;
-  render();
+
+  if (changed) {
+    updateHomeUrlParams({ current: 1, category1: targetCategory, category2: null });
+    loadProducts();
+  } else {
+    updateSearchUI();
+  }
 }
 
 function selectLimit(event) {
@@ -365,7 +532,13 @@ function startAppendLoad() {
 }
 
 async function fetchProductPage(page) {
-  return await getProducts({ limit: state.limit, page, sort: state.sort });
+  return await getProducts({
+    limit: state.limit,
+    page,
+    sort: state.sort,
+    ...(state.selectedCategory1 ? { category1: state.selectedCategory1 } : {}),
+    ...(state.selectedCategory2 ? { category2: state.selectedCategory2 } : {}),
+  });
 }
 
 function applyProductResponse(data, { append, requestedPage }) {
@@ -381,6 +554,14 @@ function applyProductResponse(data, { append, requestedPage }) {
     state.totalProducts = totalCount;
   } else if (!append) {
     state.totalProducts = state.products.length;
+  }
+
+  if (state.route?.name === "home") {
+    updateHomeUrlParams({
+      current: state.currentPage,
+      category1: state.selectedCategory1,
+      category2: state.selectedCategory2,
+    });
   }
 }
 
@@ -473,6 +654,7 @@ async function handleRouteChange() {
     return;
   }
 
+  applyHomeQueryParams();
   state.detail = createInitialDetailState();
   await ensureCategoriesLoaded();
 
@@ -522,4 +704,81 @@ function normalizeCategories(categories = {}) {
       Object.keys(children ?? {}).sort((a, b) => a.localeCompare(b, "ko")),
     ]),
   );
+}
+
+function applyHomeQueryParams() {
+  const params = new URLSearchParams(window.location.search);
+  const category1 = params.get("category1");
+  const category2 = params.get("category2");
+
+  state.selectedCategory1 = category1 || null;
+  state.selectedCategory2 = category2 || null;
+}
+
+function updateHomeUrlParams({ current, category1, category2 } = {}) {
+  if (state.route?.name !== "home") {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  const params = url.searchParams;
+
+  if (current !== undefined) {
+    if (current && Number.isFinite(current)) {
+      params.set("current", String(current));
+    } else {
+      params.delete("current");
+    }
+  }
+
+  if (category1 !== undefined) {
+    if (category1) {
+      params.set("category1", category1);
+    } else {
+      params.delete("category1");
+    }
+  }
+
+  if (category2 !== undefined) {
+    if (category2) {
+      params.set("category2", category2);
+    } else {
+      params.delete("category2");
+    }
+  }
+
+  url.search = params.toString();
+  window.history.replaceState(window.history.state, "", url.toString());
+}
+
+function buildHomeUrlWithParams({ current, category1, category2 } = {}) {
+  const url = buildUrl("");
+  const params = url.searchParams;
+
+  if (current !== undefined) {
+    if (current && Number.isFinite(current)) {
+      params.set("current", String(current));
+    } else {
+      params.delete("current");
+    }
+  }
+
+  if (category1 !== undefined) {
+    if (category1) {
+      params.set("category1", category1);
+    } else {
+      params.delete("category1");
+    }
+  }
+
+  if (category2 !== undefined) {
+    if (category2) {
+      params.set("category2", category2);
+    } else {
+      params.delete("category2");
+    }
+  }
+
+  url.search = params.toString();
+  return url;
 }
