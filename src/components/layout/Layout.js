@@ -1,5 +1,6 @@
 import { Header } from "./Header.js";
 import { Footer } from "./Footer.js";
+
 export const Layout = ({ top = "", main = "", bottom = "", headerProps = {} }) => {
   return /*html*/ `
     <div class="min-h-screen bg-gray-50">

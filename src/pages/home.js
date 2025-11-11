@@ -1,13 +1,11 @@
-import { Layout } from "../components/Layout.js";
-import { Search } from "../components/Search.js";
-import { ItemList } from "../components/ItemList.js";
+import { Layout } from "../components/index.js";
 
-export const Home = ({ searchProps = {}, productProps = {} } = {}) => {
+export const Home = () => {
   return `
     ${Layout({
       headerProps: { showBack: false },
-      top: Search(searchProps),
-      main: ItemList(productProps),
+      top: '<section id="search-section"></section>',
+      main: '<section id="product-section"></section>',
     })}
   `;
 };
