@@ -8,6 +8,8 @@ const backBtn = /*html*/ `
 `;
 
 export const Header = ({ showBack = false } = {}) => {
+  const title = showBack ? "상품 상세" : "쇼핑몰";
+
   return `
 		<header class="bg-white shadow-sm sticky top-0 z-40">
 			<div class="max-w-md mx-auto px-4 py-4">
@@ -15,7 +17,7 @@ export const Header = ({ showBack = false } = {}) => {
 					<div class="flex items-center gap-2">
 						${showBack ? backBtn : ""}
 						<h1 class="text-xl font-bold text-gray-900">
-							<a href="/" data-link="">쇼핑몰</a>
+							<a href="/" data-link="">${title}</a>
 						</h1>
 					</div>
 					<div class="flex items-center space-x-2">

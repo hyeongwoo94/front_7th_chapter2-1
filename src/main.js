@@ -33,6 +33,7 @@ const state = {
   detail: createInitialDetailState(),
   selectedCategory1: null,
   selectedCategory2: null,
+  searchTerm: "",
 };
 
 let loadMoreObserver = null;
@@ -122,6 +123,12 @@ function initializeSearchSection() {
 
   searchSectionInitialized = true;
 
+  const searchInput = document.getElementById("search-input");
+  if (searchInput) {
+    searchInput.value = state.searchTerm;
+    searchInput.addEventListener("keydown", handleSearchInputKeyDown);
+  }
+
   const limitSelect = document.getElementById("limit-select");
   if (limitSelect) {
     limitSelect.addEventListener("change", selectLimit);
@@ -146,6 +153,11 @@ function initializeSearchSection() {
 function updateSearchUI() {
   if (!searchSectionInitialized) {
     return;
+  }
+
+  const searchInput = document.getElementById("search-input");
+  if (searchInput) {
+    searchInput.value = state.searchTerm;
   }
 
   const categoryBreadcrumb = document.getElementById("category-breadcrumb");
@@ -267,15 +279,33 @@ function handleDetailBreadcrumbClick(event) {
 
   if (button.dataset.navigate === "home") {
     event.preventDefault();
-    navigateToHome();
+    resetFilters();
+    navigateToHome({ replace: false });
     return;
   }
 
   if (button.dataset.navigate === "home-category") {
     event.preventDefault();
+    resetFilters();
     const { category1, category2 } = button.dataset;
-    navigateToHome({ category1: category1 || null, category2: category2 || null, current: 1 });
+    state.selectedCategory1 = category1 || null;
+    state.selectedCategory2 = category2 || null;
+    updateHomeUrlParams({
+      current: 1,
+      category1: state.selectedCategory1,
+      category2: state.selectedCategory2,
+      search: state.searchTerm,
+    });
+    loadProducts();
   }
+}
+
+function resetFilters() {
+  state.selectedCategory1 = null;
+  state.selectedCategory2 = null;
+  state.searchTerm = "";
+  state.currentPage = 0;
+  updateHomeUrlParams({ current: 1, category1: null, category2: null, search: null });
 }
 
 function attachHeaderNavigation(root) {
@@ -283,7 +313,8 @@ function attachHeaderNavigation(root) {
   homeLinks.forEach((link) => {
     link.addEventListener("click", (event) => {
       event.preventDefault();
-      navigateToHome();
+      resetFilters();
+      navigateToHome({ replace: false });
     });
   });
 }
@@ -373,16 +404,17 @@ function handleProductCardClick(event) {
 }
 
 function navigateToDetail(productId) {
-  const detailUrl = buildUrl(`item/${encodeURIComponent(productId)}`);
+  const detailUrl = buildUrl(`product/${encodeURIComponent(productId)}`);
   window.history.pushState({ productId }, "", detailUrl.toString());
   handleRouteChange();
 }
 
-function navigateToHome({ replace = false, category1, category2, current } = {}) {
+function navigateToHome({ replace = false, category1, category2, current, search } = {}) {
   const url = buildHomeUrlWithParams({
     current,
     category1,
     category2,
+    search,
   });
 
   if (replace) {
@@ -447,7 +479,7 @@ function handleCategoryReset(event) {
     return;
   }
 
-  const changed = state.selectedCategory1 !== null || state.selectedCategory2 !== null;
+  const changed = state.selectedCategory1 !== null || state.selectedCategory2 !== null || state.searchTerm !== "";
   if (!changed) {
     updateSearchUI();
     return;
@@ -455,7 +487,8 @@ function handleCategoryReset(event) {
 
   state.selectedCategory1 = null;
   state.selectedCategory2 = null;
-  updateHomeUrlParams({ current: 1, category1: null, category2: null });
+  state.searchTerm = "";
+  updateHomeUrlParams({ current: 1, category1: null, category2: null, search: null });
   loadProducts();
 }
 
@@ -468,13 +501,14 @@ function handleCategoryBreadcrumb(event) {
 
   const { category1 } = button.dataset;
   const targetCategory = category1 || null;
-  const changed = state.selectedCategory1 !== targetCategory || state.selectedCategory2 !== null;
+  const changed =
+    state.selectedCategory1 !== targetCategory || state.selectedCategory2 !== null || state.searchTerm !== "";
 
   state.selectedCategory1 = targetCategory;
   state.selectedCategory2 = null;
 
   if (changed) {
-    updateHomeUrlParams({ current: 1, category1: targetCategory, category2: null });
+    updateHomeUrlParams({ current: 1, category1: targetCategory, category2: null, search: state.searchTerm });
     loadProducts();
   } else {
     updateSearchUI();
@@ -538,7 +572,31 @@ async function fetchProductPage(page) {
     sort: state.sort,
     ...(state.selectedCategory1 ? { category1: state.selectedCategory1 } : {}),
     ...(state.selectedCategory2 ? { category2: state.selectedCategory2 } : {}),
+    ...(state.searchTerm ? { search: state.searchTerm } : {}),
   });
+}
+
+function handleSearchInputKeyDown(event) {
+  if (event.key !== "Enter") {
+    return;
+  }
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement)) {
+    return;
+  }
+  event.preventDefault();
+  const nextTerm = input.value.trim();
+  if (state.searchTerm === nextTerm) {
+    return;
+  }
+  state.searchTerm = nextTerm;
+  updateHomeUrlParams({
+    current: 1,
+    category1: state.selectedCategory1,
+    category2: state.selectedCategory2,
+    search: nextTerm || null,
+  });
+  loadProducts();
 }
 
 function applyProductResponse(data, { append, requestedPage }) {
@@ -626,7 +684,7 @@ function parseRoute() {
     return { name: "home" };
   }
 
-  const detailMatch = pathname.match(/^item\/([^/]+)$/);
+  const detailMatch = pathname.match(/^product\/([^/]+)$/);
   if (detailMatch) {
     return {
       name: "detail",
@@ -710,12 +768,14 @@ function applyHomeQueryParams() {
   const params = new URLSearchParams(window.location.search);
   const category1 = params.get("category1");
   const category2 = params.get("category2");
+  const search = params.get("search") ?? "";
 
   state.selectedCategory1 = category1 || null;
   state.selectedCategory2 = category2 || null;
+  state.searchTerm = search;
 }
 
-function updateHomeUrlParams({ current, category1, category2 } = {}) {
+function updateHomeUrlParams({ current, category1, category2, search } = {}) {
   if (state.route?.name !== "home") {
     return;
   }
@@ -747,11 +807,19 @@ function updateHomeUrlParams({ current, category1, category2 } = {}) {
     }
   }
 
+  if (search !== undefined) {
+    if (search) {
+      params.set("search", search);
+    } else {
+      params.delete("search");
+    }
+  }
+
   url.search = params.toString();
   window.history.replaceState(window.history.state, "", url.toString());
 }
 
-function buildHomeUrlWithParams({ current, category1, category2 } = {}) {
+function buildHomeUrlWithParams({ current, category1, category2, search } = {}) {
   const url = buildUrl("");
   const params = url.searchParams;
 
@@ -776,6 +844,14 @@ function buildHomeUrlWithParams({ current, category1, category2 } = {}) {
       params.set("category2", category2);
     } else {
       params.delete("category2");
+    }
+  }
+
+  if (search !== undefined) {
+    if (search) {
+      params.set("search", search);
+    } else {
+      params.delete("search");
     }
   }
 
