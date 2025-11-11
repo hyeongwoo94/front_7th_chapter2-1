@@ -8,6 +8,10 @@ import { addCartAlert, delCartAlert, errorAlert, infoAlert, showToast } from "./
 const INITIAL_LOAD_ERROR_MESSAGE = "상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
 const LOAD_MORE_ERROR_MESSAGE = "상품을 추가로 불러오지 못했습니다. 다시 시도해 주세요.";
 const DETAIL_LOAD_ERROR_MESSAGE = "상품 상세 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+const DEFAULT_LIMIT = 20;
+const DEFAULT_SORT = "price_asc";
+const HOME_LIMIT_OPTIONS = [10, DEFAULT_LIMIT, 50, 100];
+const HOME_SORT_OPTIONS = new Set(["price_asc", "price_desc", "name_asc", "name_desc"]);
 
 function createInitialDetailState() {
   return {
@@ -23,10 +27,10 @@ const state = {
   isLoadingMore: false,
   productsError: null,
   loadMoreError: null,
-  limit: 20,
+  limit: DEFAULT_LIMIT,
   currentPage: 0,
   hasMoreProducts: true,
-  sort: "price_asc",
+  sort: DEFAULT_SORT,
   totalProducts: 0,
   categories: {},
   categoriesLoaded: false,
@@ -625,6 +629,7 @@ function selectLimit(event) {
   }
 
   state.limit = nextLimit;
+  updateHomeUrlParams({ current: 1, limit: nextLimit });
   loadProducts();
 }
 
@@ -636,6 +641,7 @@ function selectSort(event) {
   }
 
   state.sort = nextSort;
+  updateHomeUrlParams({ current: 1, sort: nextSort });
   loadProducts();
 }
 
@@ -1159,102 +1165,99 @@ function applyHomeQueryParams() {
   const category1 = params.get("category1");
   const category2 = params.get("category2");
   const search = params.get("search") ?? "";
+  const sort = params.get("sort");
+  const limit = params.get("limit");
 
   state.selectedCategory1 = category1 || null;
   state.selectedCategory2 = category2 || null;
   state.searchTerm = search;
+
+  if (sort !== null) {
+    state.sort = HOME_SORT_OPTIONS.has(sort) ? sort : DEFAULT_SORT;
+  }
+
+  if (limit !== null) {
+    const parsedLimit = Number(limit);
+    state.limit = HOME_LIMIT_OPTIONS.includes(parsedLimit) ? parsedLimit : DEFAULT_LIMIT;
+  }
 }
 
-function updateHomeUrlParams({ current, category1, category2, search } = {}) {
+function resolveHomeParams(overrides = {}) {
+  const hasOwn = Object.prototype.hasOwnProperty;
+  const valueOr = (key, fallback) => (hasOwn.call(overrides, key) ? overrides[key] : fallback);
+
+  const resolvedCategory1 = valueOr("category1", state.selectedCategory1);
+  const resolvedCategory2 = valueOr("category2", state.selectedCategory2);
+  const resolvedSort = valueOr("sort", state.sort);
+  const resolvedLimit = valueOr("limit", state.limit);
+  const resolvedSearch = valueOr("search", state.searchTerm);
+  const fallbackPage = Number.isFinite(state.currentPage) && state.currentPage > 0 ? state.currentPage : 1;
+  const resolvedCurrent = valueOr("current", fallbackPage);
+
+  return {
+    category1: resolvedCategory1,
+    category2: resolvedCategory2,
+    sort: resolvedSort,
+    limit: resolvedLimit,
+    search: resolvedSearch,
+    current: resolvedCurrent,
+  };
+}
+
+function createHomeSearchParams({ category1, category2, sort, limit, search, current } = {}) {
+  const params = new URLSearchParams();
+
+  if (category1) {
+    params.set("category1", category1);
+  }
+
+  if (category2) {
+    params.set("category2", category2);
+  }
+
+  if (sort) {
+    params.set("sort", sort);
+  }
+
+  if (limit !== undefined && limit !== null) {
+    const numericLimit = Number(limit);
+    if (Number.isFinite(numericLimit) && numericLimit > 0) {
+      params.set("limit", String(Math.trunc(numericLimit)));
+    }
+  }
+
+  if (search) {
+    params.set("search", search);
+  }
+
+  const numericCurrent = Number(current);
+  const hasSearch = Boolean(search);
+  if (Number.isFinite(numericCurrent) && (numericCurrent > 1 || (numericCurrent === 1 && hasSearch))) {
+    params.set("current", String(Math.max(1, Math.trunc(numericCurrent))));
+  }
+
+  return params;
+}
+
+function buildHomeParams(overrides = {}) {
+  const resolved = resolveHomeParams(overrides);
+  return createHomeSearchParams(resolved);
+}
+
+function updateHomeUrlParams(overrides = {}) {
   if (state.route?.name !== "home") {
     return;
   }
 
   const url = new URL(window.location.href);
-  const params = url.searchParams;
-  const willHaveSearch = search !== undefined ? Boolean(search) : Boolean(params.get("search"));
-
-  if (current !== undefined) {
-    const parsedCurrent = Number(current);
-    const isValidPage = Number.isFinite(parsedCurrent);
-    const isFirstPageWithSearch = parsedCurrent === 1 && willHaveSearch;
-    const shouldKeepCurrent = isValidPage && (parsedCurrent > 1 || isFirstPageWithSearch);
-    if (shouldKeepCurrent) {
-      params.set("current", String(Math.max(parsedCurrent, 1)));
-    } else {
-      params.delete("current");
-    }
-  }
-
-  if (category1 !== undefined) {
-    if (category1) {
-      params.set("category1", category1);
-    } else {
-      params.delete("category1");
-    }
-  }
-
-  if (category2 !== undefined) {
-    if (category2) {
-      params.set("category2", category2);
-    } else {
-      params.delete("category2");
-    }
-  }
-
-  if (search !== undefined) {
-    if (search) {
-      params.set("search", search);
-    } else {
-      params.delete("search");
-    }
-  }
-
+  const params = buildHomeParams(overrides);
   url.search = params.toString();
   window.history.replaceState(window.history.state, "", url.toString());
 }
 
-function buildHomeUrlWithParams({ current, category1, category2, search } = {}) {
+function buildHomeUrlWithParams(overrides = {}) {
   const url = buildUrl("");
-  const params = url.searchParams;
-  const willHaveSearch = search !== undefined ? Boolean(search) : Boolean(params.get("search"));
-
-  if (current !== undefined) {
-    const parsedCurrent = Number(current);
-    const isValidPage = Number.isFinite(parsedCurrent);
-    const isFirstPageWithSearch = parsedCurrent === 1 && willHaveSearch;
-    const shouldKeepCurrent = isValidPage && (parsedCurrent > 1 || isFirstPageWithSearch);
-    if (shouldKeepCurrent) {
-      params.set("current", String(Math.max(parsedCurrent, 1)));
-    } else {
-      params.delete("current");
-    }
-  }
-
-  if (category1 !== undefined) {
-    if (category1) {
-      params.set("category1", category1);
-    } else {
-      params.delete("category1");
-    }
-  }
-
-  if (category2 !== undefined) {
-    if (category2) {
-      params.set("category2", category2);
-    } else {
-      params.delete("category2");
-    }
-  }
-
-  if (search !== undefined) {
-    if (search) {
-      params.set("search", search);
-    } else {
-      params.delete("search");
-    }
-  }
-
+  const params = buildHomeParams(overrides);
   url.search = params.toString();
   return url;
 }
