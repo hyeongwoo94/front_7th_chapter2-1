@@ -3,7 +3,7 @@ import { Home } from "./pages/home.js";
 import { Detail } from "./pages/detail.js";
 import { error404 } from "./pages/404.js";
 import { Search, updateCategoryBreadcrumb, updateCategoryButtons, ItemList, Cart } from "./components/index.js";
-import { addCartAlert, delCartAlert, errorAlert, infoAlert, showToast } from "./components/alert.js";
+import { addCartAlert, delCartAlert, errorAlert, infoAlert, showToast } from "./components/Alert.js";
 
 const INITIAL_LOAD_ERROR_MESSAGE = "상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
 const LOAD_MORE_ERROR_MESSAGE = "상품을 추가로 불러오지 못했습니다. 다시 시도해 주세요.";
