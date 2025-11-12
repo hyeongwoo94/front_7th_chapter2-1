@@ -95,13 +95,12 @@ const scheduleRemoval = (toast) => {
       },
       { once: true },
     );
-    // id는 고유하지 않을 수 있으므로 중복을 방지하기 위해 제거한다.
-    closeBtn.removeAttribute("id");
+    // ID를 유지하여 테스트에서 접근 가능하도록 함
   }
 
   dismissTimer = window.setTimeout(() => {
     clear();
-  }, 2000);
+  }, 3000);
 };
 
 const getTemplateType = (template) => {

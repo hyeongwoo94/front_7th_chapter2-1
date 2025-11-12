@@ -391,12 +391,11 @@ function handleDetailBreadcrumbClick(event) {
   if (button.dataset.navigate === "home-category") {
     event.preventDefault();
     const { category1, category2 } = button.dataset;
-    resetFilters({ updateUrl: false });
-    state.selectedCategory1 = category1 || null;
-    state.selectedCategory2 = category2 || null;
+    // resetFilters를 호출하지 않고 navigateToHome에 직접 파라미터를 전달
+    // navigateToHome이 URL을 업데이트하고 handleRouteChange가 applyHomeQueryParams를 통해 상태를 복원함
     navigateToHome({
-      category1: state.selectedCategory1,
-      category2: state.selectedCategory2,
+      category1: category1 || null,
+      category2: category2 || null,
       current: 1,
       search: null,
     });
@@ -556,12 +555,25 @@ function handleCategory1Select(event) {
   }
 
   const changed = state.selectedCategory1 !== category1 || state.selectedCategory2 !== null;
-  state.selectedCategory1 = category1;
-  state.selectedCategory2 = null;
 
   if (changed) {
+    // 카테고리 변경 시 기존 로딩 상태를 리셋하여 새로운 API 호출이 보장되도록 함
+    state.isLoadingProducts = false;
+    state.isLoadingMore = false;
+    state.productsError = null;
+    state.loadMoreError = null;
+    state.products = []; // 이전 상품 목록 초기화
+    state.totalProducts = 0; // 총 개수 초기화
+    state.currentPage = 0;
+
+    state.selectedCategory1 = category1;
+    state.selectedCategory2 = null;
     state.urlTouched = true;
-    updateHomeUrlParams({ current: 1, category1, category2: null });
+
+    // 브레드크럼과 카테고리 버튼을 즉시 업데이트
+    updateSearchUI();
+
+    // 새로운 카테고리로 API 호출
     loadProducts();
   } else {
     updateSearchUI();
@@ -580,12 +592,25 @@ function handleCategory2Select(event) {
   }
 
   const changed = state.selectedCategory1 !== category1 || state.selectedCategory2 !== category2;
-  state.selectedCategory1 = category1;
-  state.selectedCategory2 = category2;
 
   if (changed) {
+    // 카테고리 변경 시 기존 로딩 상태를 리셋하여 새로운 API 호출이 보장되도록 함
+    state.isLoadingProducts = false;
+    state.isLoadingMore = false;
+    state.productsError = null;
+    state.loadMoreError = null;
+    state.products = []; // 이전 상품 목록 초기화
+    state.totalProducts = 0; // 총 개수 초기화
+    state.currentPage = 0;
+
+    state.selectedCategory1 = category1;
+    state.selectedCategory2 = category2;
     state.urlTouched = true;
-    updateHomeUrlParams({ current: 1, category1, category2 });
+
+    // 브레드크럼과 카테고리 버튼을 즉시 업데이트
+    updateSearchUI();
+
+    // 새로운 카테고리로 API 호출
     loadProducts();
   } else {
     updateSearchUI();
@@ -642,6 +667,14 @@ function selectLimit(event) {
     return;
   }
 
+  // 개수 변경 시 기존 로딩 상태를 리셋하여 새로운 API 호출이 보장되도록 함
+  state.isLoadingProducts = false;
+  state.isLoadingMore = false;
+  state.productsError = null;
+  state.loadMoreError = null;
+  state.products = []; // 이전 상품 목록 초기화 (페이지당 개수가 변경되므로)
+  state.currentPage = 0;
+
   state.limit = nextLimit;
   state.limitTouched = true;
   state.urlTouched = true;
@@ -655,6 +688,14 @@ function selectSort(event) {
     render();
     return;
   }
+
+  // 정렬 변경 시 기존 로딩 상태를 리셋하여 새로운 API 호출이 보장되도록 함
+  state.isLoadingProducts = false;
+  state.isLoadingMore = false;
+  state.productsError = null;
+  state.loadMoreError = null;
+  state.products = []; // 이전 상품 목록 초기화 (정렬이 변경되므로)
+  state.currentPage = 0;
 
   state.sort = nextSort;
   state.sortTouched = true;
@@ -672,6 +713,7 @@ function startInitialLoad() {
   state.productsError = null;
   state.loadMoreError = null;
   state.currentPage = 0;
+  state.products = []; // 이전 상품 목록 초기화
   state.hasMoreProducts = true;
   state.totalProducts = 0;
   render();
@@ -692,14 +734,28 @@ function startAppendLoad() {
 }
 
 async function fetchProductPage(page) {
-  return await getProducts({
+  const params = {
     limit: state.limit,
     page,
     sort: state.sort,
     ...(state.selectedCategory1 ? { category1: state.selectedCategory1 } : {}),
     ...(state.selectedCategory2 ? { category2: state.selectedCategory2 } : {}),
     ...(state.searchTerm ? { search: state.searchTerm } : {}),
+  };
+
+  // API 호출 파라미터 콘솔 로그
+  console.log("🔍 API 호출:", params);
+
+  const result = await getProducts(params);
+
+  // API 응답 콘솔 로그
+  console.log("📥 API 응답:", {
+    productsCount: result?.products?.length ?? 0,
+    totalCount: result?.pagination?.total ?? 0,
+    page: result?.pagination?.page ?? 0,
   });
+
+  return result;
 }
 
 function handleSearchInputKeyDown(event) {
@@ -740,6 +796,15 @@ function applyProductResponse(data, { append, requestedPage }) {
   } else if (!append) {
     state.totalProducts = state.products.length;
   }
+
+  // 총 상품 개수 콘솔 로그
+  console.log("📦 총 상품 개수 업데이트:", state.totalProducts, "개", {
+    category1: state.selectedCategory1,
+    category2: state.selectedCategory2,
+    search: state.searchTerm,
+    products: state.products.length,
+    totalFromAPI: totalCount,
+  });
 
   if (state.route?.name === "home") {
     updateHomeUrlParams({
@@ -876,14 +941,10 @@ async function handleRouteChange() {
   state.detail = createInitialDetailState();
   await ensureCategoriesLoaded();
 
-  if (!state.products.length) {
-    await loadProducts();
-    return;
-  }
-
-  state.isLoadingProducts = false;
-  state.productsError = null;
-  render();
+  // URL 파라미터가 변경되었을 수 있으므로 항상 상품을 다시 로드
+  // 이전에 로드된 상품이 있어도 새로운 필터 조건에 맞는 상품을 로드해야 함
+  // loadProducts() 내부의 startInitialLoad()에서 상태 초기화가 이루어지므로 여기서는 초기화하지 않음
+  await loadProducts();
 }
 
 async function main() {
@@ -974,7 +1035,13 @@ function updateCartBadge(providedCount) {
 }
 
 function renderCartModal() {
-  const existing = document.getElementById("cart-modal-root");
+  // main 태그를 찾아서 형제 태그로 모달을 추가
+  const mainElement = document.querySelector("main");
+  // Cart 컴포넌트가 반환하는 최상위 div.cart-modal을 찾음
+  const existing = mainElement?.nextElementSibling?.classList?.contains("cart-modal")
+    ? mainElement.nextElementSibling
+    : null;
+
   if (!state.isCartOpen) {
     if (existing) {
       existing.remove();
@@ -988,17 +1055,24 @@ function renderCartModal() {
   const { items, totalCount, totalPrice, selectedCount, selectedPrice } = getCartSummary();
 
   let container = existing;
-  if (!container) {
-    container = document.createElement("div");
-    container.id = "cart-modal-root";
-    document.body.appendChild(container);
+  if (!container && mainElement) {
+    // Cart 컴포넌트의 HTML을 직접 삽입
+    const cartHTML = Cart({ items, totalCount, totalPrice, selectedCount, selectedPrice });
+    mainElement.insertAdjacentHTML("afterend", cartHTML);
+    // 삽입된 최상위 div.cart-modal 요소를 찾음
+    container = mainElement.nextElementSibling;
+  } else if (container) {
+    // 기존 컨테이너가 있으면 내용만 업데이트
+    // innerHTML을 사용하면 기존 이벤트 리스너가 제거되므로, 이벤트를 다시 연결해야 함
+    cartModalEventsAttached = false;
+    container.innerHTML = Cart({ items, totalCount, totalPrice, selectedCount, selectedPrice });
   }
 
-  container.innerHTML = Cart({ items, totalCount, totalPrice, selectedCount, selectedPrice });
-
-  attachCartModalEvents(container);
-  attachCartEscapeListener();
-  updateCartBadge(totalCount);
+  if (container && container.classList.contains("cart-modal")) {
+    attachCartModalEvents(container);
+    attachCartEscapeListener();
+    updateCartBadge(totalCount);
+  }
 }
 
 function attachCartModalEvents(container) {
@@ -1014,6 +1088,124 @@ function attachCartModalEvents(container) {
 function handleCartKeydown(event) {
   if (event.key === "Escape") {
     closeCartModal();
+  }
+}
+
+function updateCartModalSelection() {
+  if (!state.isCartOpen) {
+    return;
+  }
+
+  const modal = document.querySelector(".cart-modal");
+  if (!modal) {
+    return;
+  }
+
+  const { totalCount, selectedCount, selectedPrice, totalPrice } = getCartSummary();
+
+  // 각 상품 체크박스 업데이트
+  Object.keys(state.cartItems).forEach((productId) => {
+    const item = state.cartItems[productId];
+    const checkbox = modal.querySelector(`.cart-item-checkbox[data-product-id="${productId}"]`);
+    if (checkbox && checkbox.checked !== item.selected) {
+      checkbox.checked = item.selected;
+    }
+  });
+
+  // 전체선택 체크박스 업데이트
+  const selectAllCheckbox = modal.querySelector(".cart-select-all-checkbox");
+  if (selectAllCheckbox) {
+    const shouldBeChecked = selectedCount > 0 && selectedCount === totalCount;
+    if (selectAllCheckbox.checked !== shouldBeChecked) {
+      selectAllCheckbox.checked = shouldBeChecked;
+    }
+    // 전체선택 텍스트 업데이트 (label의 텍스트 노드 찾기)
+    const selectAllLabel = selectAllCheckbox.closest("label");
+    if (selectAllLabel) {
+      // label의 모든 텍스트 노드를 찾아서 업데이트
+      const walker = document.createTreeWalker(selectAllLabel, NodeFilter.SHOW_TEXT, null);
+      let textNode;
+      while ((textNode = walker.nextNode())) {
+        if (textNode.textContent.trim().startsWith("전체선택")) {
+          textNode.textContent = `전체선택 (${selectedCount}/${totalCount})`;
+          break;
+        }
+      }
+    }
+  }
+
+  // 하단 섹션 업데이트
+  const bottomSection = modal.querySelector(".border-t.border-gray-200.p-4.bg-gray-50");
+  if (bottomSection) {
+    const formatPrice = (value) => {
+      const numeric = Number(value) || 0;
+      return `${numeric.toLocaleString()}원`;
+    };
+
+    if (selectedCount > 0) {
+      bottomSection.innerHTML = `
+        <div class="space-y-3">
+          <div class="flex items-center justify-between text-sm text-gray-600">
+            <span>선택한 상품</span>
+            <span class="font-medium text-gray-900">${selectedCount}개 / ${formatPrice(selectedPrice)}</span>
+          </div>
+          <div class="flex items-center justify-between text-sm text-gray-600">
+            <span>총 금액</span>
+            <span class="text-lg font-bold text-blue-600">${formatPrice(totalPrice)}</span>
+          </div>
+          <button
+            id="cart-modal-remove-selected-btn"
+            class="w-full bg-red-500 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-red-600 transition"
+            data-cart-action="remove-selected"
+          >
+            선택한 상품 삭제
+          </button>
+          <div class="flex gap-2">
+            <button
+              id="cart-modal-clear-cart-btn"
+              class="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-700 transition"
+              data-cart-action="clear"
+            >
+              전체 비우기
+            </button>
+            <button
+              class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-blue-700 transition"
+              data-cart-action="checkout"
+            >
+              구매하기
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      bottomSection.innerHTML = `
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-lg font-bold text-gray-900">총 금액</span>
+            <span class="text-lg font-bold text-blue-600">${formatPrice(totalPrice)}</span>
+          </div>
+          <div class="flex gap-2 pt-1">
+            <button
+              id="cart-modal-clear-cart-btn"
+              class="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-700 transition"
+              data-cart-action="clear"
+            >
+              전체 비우기
+            </button>
+            <button
+              class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-blue-700 transition"
+              data-cart-action="checkout"
+            >
+              구매하기
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // 이벤트 리스너 재연결
+    cartModalEventsAttached = false;
+    attachCartModalEvents(modal);
   }
 }
 
@@ -1096,7 +1288,7 @@ function handleCartCheckboxToggle(checkbox) {
   }
 
   state.cartItems[productId].selected = checkbox.checked;
-  renderCartModal();
+  updateCartModalSelection();
   saveCartToStorage();
 }
 
@@ -1104,19 +1296,73 @@ function handleCartSelectAllChange(checked) {
   Object.keys(state.cartItems).forEach((productId) => {
     state.cartItems[productId].selected = checked;
   });
-  renderCartModal();
+  updateCartModalSelection();
   saveCartToStorage();
+}
+
+function removeCartItemFromModal(productId) {
+  if (!state.isCartOpen) {
+    return;
+  }
+
+  const modal = document.querySelector(".cart-modal");
+  if (!modal) {
+    return;
+  }
+
+  const cartItem = modal.querySelector(`.cart-item[data-product-id="${productId}"]`);
+  if (cartItem) {
+    cartItem.remove();
+  }
+
+  const { totalCount } = getCartSummary();
+  updateCartBadge(totalCount);
+
+  // 장바구니가 비어있으면 모달 재렌더링
+  if (Object.keys(state.cartItems).length === 0) {
+    renderCartModal();
+  } else {
+    // 선택 정보 업데이트
+    updateCartModalSelection();
+  }
 }
 
 function removeSelectedCartItems() {
   const before = Object.keys(state.cartItems).length;
+  const removedProductIds = [];
+
   Object.keys(state.cartItems).forEach((productId) => {
     if (state.cartItems[productId]?.selected) {
+      removedProductIds.push(productId);
       delete state.cartItems[productId];
     }
   });
+
   if (Object.keys(state.cartItems).length !== before) {
-    renderCartModal();
+    const { totalCount } = getCartSummary();
+    updateCartBadge(totalCount);
+
+    // cart-items-container에서 선택된 상품들만 제거
+    if (state.isCartOpen) {
+      const modal = document.querySelector(".cart-modal");
+      if (modal) {
+        removedProductIds.forEach((productId) => {
+          const cartItem = modal.querySelector(`.cart-item[data-product-id="${productId}"]`);
+          if (cartItem) {
+            cartItem.remove();
+          }
+        });
+
+        // 장바구니가 비어있으면 모달 재렌더링
+        if (Object.keys(state.cartItems).length === 0) {
+          renderCartModal();
+        } else {
+          // 선택 정보 업데이트
+          updateCartModalSelection();
+        }
+      }
+    }
+
     showToast(delCartAlert);
     saveCartToStorage();
   }
@@ -1142,13 +1388,58 @@ function checkoutCart() {
   console.info(`선택한 ${selectedCount}개의 상품, 총 ${selectedPrice}원 결제 진행 (모의).`);
 }
 
+function updateCartItemQuantity(productId) {
+  if (!state.isCartOpen) {
+    return;
+  }
+
+  const modal = document.querySelector(".cart-modal");
+  if (!modal) {
+    return;
+  }
+
+  const item = state.cartItems[productId];
+  if (!item) {
+    return;
+  }
+
+  const { product, quantity } = item;
+  const lprice = Number(product?.lprice) || 0;
+  const itemPrice = lprice * quantity;
+
+  // 수량 입력 필드 업데이트
+  const quantityInput = modal.querySelector(`#quantity-input-${productId}`);
+  if (quantityInput) {
+    quantityInput.value = quantity;
+  }
+
+  // 상품 금액 업데이트
+  const cartItem = modal.querySelector(`.cart-item[data-product-id="${productId}"]`);
+  if (cartItem) {
+    const priceContainer = cartItem.querySelector(`.flex.flex-col.items-end.gap-2`);
+    if (priceContainer) {
+      const itemPriceElement = priceContainer.querySelector(`p.text-sm.font-medium.text-gray-900`);
+      if (itemPriceElement) {
+        const formatPrice = (value) => {
+          const numeric = Number(value) || 0;
+          return `${numeric.toLocaleString()}원`;
+        };
+        itemPriceElement.textContent = formatPrice(itemPrice);
+      }
+    }
+  }
+
+  // 총 금액 업데이트
+  updateCartModalSelection();
+}
+
 function incrementCartItem(productId) {
   const item = state.cartItems[productId];
   if (!item) {
     return;
   }
   item.quantity += 1;
-  renderCartModal();
+  updateCartItemQuantity(productId);
   saveCartToStorage();
 }
 
@@ -1161,11 +1452,13 @@ function decrementCartItem(productId) {
   if (item.quantity <= 1) {
     delete state.cartItems[productId];
     showToast(delCartAlert);
+    // 상품이 삭제되면 모달에서 해당 아이템 제거
+    removeCartItemFromModal(productId);
   } else {
     item.quantity -= 1;
+    updateCartItemQuantity(productId);
   }
 
-  renderCartModal();
   saveCartToStorage();
 }
 
@@ -1173,8 +1466,9 @@ function removeCartItem(productId) {
   if (!state.cartItems[productId]) {
     return;
   }
+
   delete state.cartItems[productId];
-  renderCartModal();
+  removeCartItemFromModal(productId);
   showToast(delCartAlert);
   saveCartToStorage();
 }

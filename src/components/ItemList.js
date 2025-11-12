@@ -10,7 +10,10 @@ const Skeleton = `
 	</div>
 `;
 
-const item = ({ title, image, productId, lprice }) => {
+const item = ({ title, image, productId, lprice, brand, maker }) => {
+  // brand 또는 maker 정보가 있으면 표시 (brand 우선)
+  const brandText = brand || maker || "";
+
   return `
 	<div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden product-card"
 		data-product-id="${productId}">
@@ -25,7 +28,7 @@ const item = ({ title, image, productId, lprice }) => {
 				<h3 class="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
 					${title}
 				</h3>
-				<p class="text-xs text-gray-500 mb-2"></p>
+				${brandText ? `<p class="text-xs text-gray-500 mb-2">${brandText}</p>` : `<p class="text-xs text-gray-500 mb-2"></p>`}
 				<p class="text-lg font-bold text-gray-900">
 					${Number(lprice).toLocaleString()}원
 				</p>

@@ -23,11 +23,6 @@ export const DetailNav = ({ product, loading = false } = {}) => {
         `<button data-navigate="home-category" data-category1="${product.category1}" data-category2="${product.category2}" class="text-xs text-gray-600 hover:text-blue-600 transition-colors">${product.category2}</button>`,
       );
     }
-
-    const extraCategories = [product?.category3, product?.category4]
-      .filter(Boolean)
-      .map((category) => `<span class="text-xs text-gray-600">${category}</span>`);
-    crumbs.push(...extraCategories);
   }
 
   const content = crumbs.map((crumb, index) => (index === 0 ? crumb : `${Separator()}${crumb}`)).join("");

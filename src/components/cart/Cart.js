@@ -26,6 +26,7 @@ const renderCartItem = ({ product = {}, quantity = 1, selected = false }) => {
         <p class="text-sm text-gray-600 mt-1">${formatPrice(lprice)}</p>
         <div class="flex items-center mt-2">
           <button
+            id="quantity-decrease-${productId}"
             class="quantity-decrease-btn w-7 h-7 flex items-center justify-center border border-gray-300 rounded-l-md bg-gray-50 hover:bg-gray-100"
             data-cart-action="decrease"
             data-cart-product-id="${productId}"
@@ -36,6 +37,7 @@ const renderCartItem = ({ product = {}, quantity = 1, selected = false }) => {
           </button>
           <input
             type="number"
+            id="quantity-input-${productId}"
             value="${quantity}"
             min="1"
             class="quantity-input w-12 h-7 text-center text-sm border-t border-b border-gray-300 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
@@ -43,6 +45,7 @@ const renderCartItem = ({ product = {}, quantity = 1, selected = false }) => {
             data-cart-product-id="${productId}"
           />
           <button
+            id="quantity-increase-${productId}"
             class="quantity-increase-btn w-7 h-7 flex items-center justify-center border border-gray-300 rounded-r-md bg-gray-50 hover:bg-gray-100"
             data-cart-action="increase"
             data-cart-product-id="${productId}"
@@ -99,6 +102,7 @@ export const Cart = ({ items = [], totalCount = 0, totalPrice = 0, selectedCount
                     <label class="flex items-center gap-2 text-sm text-gray-700">
                       <input
                         type="checkbox"
+                        id="cart-modal-select-all-checkbox"
                         class="cart-select-all-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         ${selectedCount > 0 && selectedCount === totalCount ? "checked" : ""}
                       />
@@ -123,6 +127,7 @@ export const Cart = ({ items = [], totalCount = 0, totalPrice = 0, selectedCount
                             <span class="text-lg font-bold text-blue-600">${formatPrice(totalPrice)}</span>
                           </div>
                           <button
+                            id="cart-modal-remove-selected-btn"
                             class="w-full bg-red-500 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-red-600 transition"
                             data-cart-action="remove-selected"
                           >
@@ -130,6 +135,7 @@ export const Cart = ({ items = [], totalCount = 0, totalPrice = 0, selectedCount
                           </button>
                           <div class="flex gap-2">
                             <button
+                              id="cart-modal-clear-cart-btn"
                               class="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-700 transition"
                               data-cart-action="clear"
                             >
@@ -153,6 +159,7 @@ export const Cart = ({ items = [], totalCount = 0, totalPrice = 0, selectedCount
                           </div>
                           <div class="flex gap-2 pt-1">
                             <button
+                              id="cart-modal-clear-cart-btn"
                               class="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-700 transition"
                               data-cart-action="clear"
                             >

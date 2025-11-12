@@ -52,28 +52,6 @@ const renderRating = (rating, reviewCount) => {
   `;
 };
 
-const renderThumbnails = (images = []) => {
-  const uniqueImages = Array.from(new Set(images.filter(Boolean)));
-  if (uniqueImages.length <= 1) {
-    return "";
-  }
-
-  return `
-    <div class="grid grid-cols-3 gap-2 mt-2">
-      ${uniqueImages
-        .slice(0, 6)
-        .map(
-          (url) => `
-        <div class="aspect-square bg-gray-100 rounded-md overflow-hidden">
-          <img src="${url}" alt="상품 미리보기" class="w-full h-full object-cover">
-        </div>
-      `,
-        )
-        .join("")}
-    </div>
-  `;
-};
-
 const renderRelatedProducts = (related = []) => {
   if (!Array.isArray(related) || related.length === 0) {
     return `
@@ -118,7 +96,6 @@ export const DetailContent = ({ product, loading = false, error = null } = {}) =
     title,
     description,
     image,
-    images = [],
     lprice,
     mallName,
     stock,
@@ -130,7 +107,6 @@ export const DetailContent = ({ product, loading = false, error = null } = {}) =
   } = product;
 
   const price = formatCurrency(lprice);
-  const thumbnails = renderThumbnails([image, ...images]);
   const ratingTemplate = renderRating(rating, reviewCount);
   const vendorInfo = [brand, maker, mallName].filter(Boolean).join(" • ");
 
@@ -141,7 +117,6 @@ export const DetailContent = ({ product, loading = false, error = null } = {}) =
           <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4">
             <img src="${image}" alt="${title}" class="w-full h-full object-cover">
           </div>
-          ${thumbnails}
           <div class="mt-4 space-y-4">
             <header>
               <p class="text-sm text-gray-500 mb-1">${vendorInfo}</p>
@@ -163,6 +138,7 @@ export const DetailContent = ({ product, loading = false, error = null } = {}) =
             <div class="flex items-center">
               <button
                 type="button"
+                id="quantity-decrease"
                 data-quantity-decrease
                 class="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-l-md bg-gray-50 hover:bg-gray-100"
               >
@@ -180,6 +156,7 @@ export const DetailContent = ({ product, loading = false, error = null } = {}) =
               />
               <button
                 type="button"
+                id="quantity-increase"
                 data-quantity-increase
                 class="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-r-md bg-gray-50 hover:bg-gray-100"
               >
@@ -190,6 +167,7 @@ export const DetailContent = ({ product, loading = false, error = null } = {}) =
             </div>
           </div>
           <button
+            id="add-to-cart-btn"
             data-product-id="${product.productId}"
             class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium add-to-cart"
           >
@@ -197,6 +175,15 @@ export const DetailContent = ({ product, loading = false, error = null } = {}) =
           </button>
         </div>
       </section>
+      <div class="flex justify-center">
+        <button
+          data-navigate="home"
+          class="block w-full text-center bg-gray-100 text-gray-700 py-3 px-4 rounded-md 
+                hover:bg-gray-200 transition-colors go-to-product-list"
+        >
+          상품 목록으로 돌아가기
+        </button>
+      </div>
 
       <section class="bg-white rounded-lg shadow-sm">
         <div class="p-4 border-b border-gray-200">
@@ -208,14 +195,7 @@ export const DetailContent = ({ product, loading = false, error = null } = {}) =
         </div>
       </section>
 
-      <div class="flex justify-center">
-        <button
-          data-navigate="home"
-          class="inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
-        >
-          상품 목록으로 돌아가기
-        </button>
-      </div>
+
     </article>
   `;
 };
