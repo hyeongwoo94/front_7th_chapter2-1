@@ -811,6 +811,7 @@ function applyProductResponse(data, { append, requestedPage }) {
       current: state.currentPage,
       category1: state.selectedCategory1,
       category2: state.selectedCategory2,
+      force: true, // 무한 스크롤 시에도 current를 URL에 표시
     });
   }
 }
@@ -1523,7 +1524,19 @@ function resolveHomeParams(overrides = {}) {
   const resolvedSearch = valueOr("search", state.searchTerm);
   const fallbackPage = Number.isFinite(state.currentPage) && state.currentPage > 0 ? state.currentPage : 1;
   const resolvedCurrent = valueOr("current", fallbackPage);
-  const forceCurrent = hasOverride("current");
+
+  // current가 오버라이드되었을 때, 필터가 없고 current가 1이면 forceCurrent를 false로 설정
+  // (필터/검색/정렬/개수 변경 없이 무한 스크롤할 때 current=1은 URL에 표시하지 않음)
+  const hasCurrentOverride = hasOverride("current");
+  const hasFilter = Boolean(
+    resolvedCategory1 ||
+      resolvedCategory2 ||
+      resolvedSearch ||
+      (resolvedSort && state.sortTouched) ||
+      (resolvedLimit && state.limitTouched),
+  );
+  const numericCurrent = Number(resolvedCurrent);
+  const forceCurrent = hasCurrentOverride && (hasFilter || numericCurrent > 1);
 
   return {
     category1: resolvedCategory1,
@@ -1581,12 +1594,13 @@ function updateHomeUrlParams(overrides = {}) {
     return;
   }
 
-  if (!state.urlTouched) {
+  const { force, ...restOverrides } = overrides;
+  if (!force && !state.urlTouched) {
     return;
   }
 
   const url = new URL(window.location.href);
-  const params = buildHomeParams(overrides);
+  const params = buildHomeParams(restOverrides);
   url.search = params.toString();
   window.history.replaceState(window.history.state, "", url.toString());
 }
